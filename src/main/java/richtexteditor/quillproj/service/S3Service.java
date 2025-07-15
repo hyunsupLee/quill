@@ -8,6 +8,8 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectResponse;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -75,5 +77,25 @@ public class S3Service {
         log.info("key = {}", key);
         client().putObject(req, RequestBody.fromFile(path));
         return "https://" + bucket + ".s3." + region + ".amazonaws.com/" + key;
+    }
+
+
+    public String delete(Path path) {
+
+        String key = dir + path.getFileName();
+
+        DeleteObjectRequest delReq = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        DeleteObjectResponse response = client().deleteObject(delReq);
+
+        if (response.deleteMarker()) {
+            log.info("Object marked for deletion (versioning enabled): {}", key);
+        } else {
+            log.info("Object deleted successfully: {}", key);
+        }
+        return key;
     }
 }

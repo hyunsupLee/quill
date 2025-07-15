@@ -1,5 +1,6 @@
 package richtexteditor.quillproj.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,6 +16,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
+
+@Slf4j
 @Controller
 public class QuillController {
 	final String HTML_FILE_PATH = "src/main/resources/static/html/";
@@ -90,6 +93,8 @@ public class QuillController {
                 e.printStackTrace();
             }
             quillService.deletePost(id);
+            Path path = Paths.get(post.getHtmlFileName());
+            s3Service.delete(path);// S3 파일삭제
         }
         return "redirect:/create";
     }

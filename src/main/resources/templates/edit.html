@@ -14,9 +14,7 @@
   </style>
   
 </head>
-    
-    
-</head>
+
 <body>
     <div class="container mt-5">
         <h1 class="mb-4">Edit Post</h1>
@@ -80,47 +78,57 @@
         </form>
     </div>
 
-    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    <script th:inline="javascript">
-    var quill = new Quill('#quilleditor2', {
-    	  modules: {
-    	    toolbar: '#quilltoolbar2'
-    	  },
-    	  theme: 'snow'
-    	});
 
-    	var content = /*[[${content}]]*/ '';
-    	console.log(content); // Debug to check content
-    	quill.setContents(quill.clipboard.convert(content)); // Convert content before setting
-    	
-    	quill.on('text-change', function(delta, source) {
-    		  document.querySelector('#content').value = quill.root.innerHTML;
-    		  
-    		  var quillContent = quill.root.innerHTML;
-              var headerContent = `
-                  <!DOCTYPE html>
-                  <html>
-                  <head>
-                      <meta charset="UTF-8">
-                      <style>
-                      .ql-video {
-                          width: 50%;
-                          max-width: 100%;
-                          height: 50%;
-                          aspect-ratio: 16 / 9;
-                      }
-                      </style>
-                  </head>
-                  <body>
-              `;
-              var footerContent = `
-                  </body>
-                  </html>
-              `;
-              var completeHtml = headerContent + quillContent + footerContent;
-              document.querySelector('#content').value = completeHtml;
-              
-    		});
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
+    <script th:inline="javascript">
+        // Quill.register('modules/imageResize', ImageResize); // 이 줄은 필요하지 않습니다.
+
+        var quill = new Quill('#quilleditor2', {
+            modules: {
+                toolbar: '#quilltoolbar2',
+                imageResize: {
+                    modules: [ 'Resize', 'DisplaySize', 'Toolbar' ]
+                }
+            },
+            theme: 'snow'
+        });
+
+        var initialContent = /*[[${content}]]*/ '';
+        quill.clipboard.dangerouslyPasteHTML(0, initialContent);
+
+        function updateContentHiddenInput() {
+            var quillHtml = quill.root.innerHTML;
+            var headerContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        .ql-align-center {
+                            text-align:center;
+                        }
+                    </style>
+                </head>
+                <body>
+            `;
+            var footerContent = `
+                </body>
+                </html>
+            `;
+            document.querySelector('#content').value = headerContent + quillHtml + footerContent;
+        }
+
+        updateContentHiddenInput();
+
+        quill.on('text-change', function(delta, oldDelta, source) {
+            updateContentHiddenInput();
+        });
+
+        document.querySelector('form').onsubmit = function(event) {
+            updateContentHiddenInput();
+        };
     </script>
 </body>
 </html>
