@@ -1,4 +1,4 @@
-name: Build Spring Boot Application and Upload Artifact
+name: Build & Deploy Spring Boot Static Assets to GitHub Pages
 
 on:
   push:
@@ -26,15 +26,44 @@ jobs:
       - name: Grant execute permission for gradlew # gradlew 실행 권한 부여
         run: chmod +x gradlew
 
-      - name: Build with Gradle # Gradle을 사용하여 프로젝트 빌드
+      - name: Build with Gradle # Gradle을 사용하여 프로젝트 빌드 (정적 파일도 함께 빌드됨)
         run: ./gradlew build -x test # 테스트를 건너뛰려면 -x test 추가 (선택 사항)
 
-      # - name: Run tests # 테스트를 실행하려면 이 주석을 해제
-      #   run: ./gradlew test
-
-      - name: Upload artifact # 빌드된 JAR 파일을 아티팩트로 업로드
+      - name: Upload JAR artifact # 빌드된 JAR 파일을 아티팩트로 업로드 (백엔드 배포용)
         uses: actions/upload-artifact@v4
         with:
-          name: quillproj # 아티팩트 이름
-          path: build/libs/*.jar # 빌드된 JAR 파일 경로 (프로젝트 설정에 따라 변경)
-          retention-days: 30 # 아티팩트 보관 기간 (선택 사항, 기본값 90일)
+          name: quillproj-jar # 아티팩트 이름
+          path: build/libs/*.jar # 빌드된 JAR 파일 경로
+          retention-days: 30 # 아티팩트 보관 기간
+
+      - name: Upload Static Assets artifact # 빌드된 정적 리소스 아티팩트 업로드 (GH Pages 배포용)
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-assets # 정적 파일 아티팩트 이름
+          # Spring Boot의 정적 리소스 기본 빌드 경로: build/resources/main/static
+          # 프로젝트 구조에 따라 이 경로를 정확히 확인하고 변경해야 합니다.
+          path: build/resources/main/static
+          retention-days: 1 # 짧게 설정하여 불필요한 저장 공간 낭비 방지
+
+  deploy-gh-pages:
+    needs: build # build Job이 성공적으로 완료된 후에 deploy-gh-pages Job 실행
+    runs-on: ubuntu-latest # Ubuntu 최신 버전에서 실행
+
+    steps:
+      - name: Checkout code # gh-pages 브랜치에 푸시하기 위해 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Download Static Assets artifact # build Job에서 업로드한 정적 파일 아티팩트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: static-assets # 아티팩트 이름
+          path: ./static-content # 다운로드될 로컬 경로 (이 폴더가 gh-pages로 푸시됨)
+
+      - name: Deploy to GitHub Pages # 다운로드된 정적 파일을 gh-pages 브랜치로 푸시
+        uses: peaceiris/actions-gh-pages@v3 # GitHub Pages 배포 전용 액션
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # GitHub에서 자동으로 제공하는 토큰
+          publish_dir: ./static-content # GitHub Pages로 배포할 디렉토리 (다운로드된 정적 파일 경로)
+          publish_branch: gh-pages # 배포할 대상 브랜치 (gh-pages 브랜치가 없으면 자동으로 생성)
+          user_name: 'github-actions[bot]' # 커밋 유저명
+          user_email: 'github-actions[bot]@users.noreply.github.com' # 커밋 유저 이메일
